@@ -1,0 +1,499 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<section class="resume-section" id="portfolio">
+                <div class="resume-section-content">
+                    <h2 class="mb-5">Portfolio</h2>
+                    <ul class="list-inline dev-icons">
+                        <li class="list-inline-item"><i class="fab fa-wordpress" title="Wordpress"></i></li>
+                        <li class="list-inline-item"><i class="fab fa-python" title="Python"></i></li>
+                        <li class="list-inline-item"><i class="fa-solid fa-file-excel" title="PowerQuery"></i></li>
+                        <li class="list-inline-item"><i class="fa-solid fa-database" title="SQL"></i></li>
+                        <li class="list-inline-item"><i class="fa-solid fa-chart-simple" title="PowerBI"></i></li>
+                        
+                    </ul>
+                   <p></p><br />
+
+<!-- Concert Ticket Sales -->
+                    
+                    <div class="d-flex flex-column flex-md-row justify-content-between mb-5">
+                        <div class="flex-grow-1">
+                            <h3 class="mb-0">Concert Ticket Sales for 2025 </h3>
+                            <div class="subheading mb-3">PowerBI | JSON | Calculation Groups | Dynamic Currency Formatting</div>
+                            <p>A complex interactive Power BI dashboard showing fictional 2025 concert ticket sales, converted into $CAD using live Bank of Canada exchange rates. It features dynamic currency formatting, custom growth metrics, and Calculation Groups for streamlined Time Intelligence.
+                  <!-- Accordion 1 -->
+                    <div class="accordion" id="accordionExample">
+                      <div class="accordion-item">
+                        <h2 class="accordion-header">
+                          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                            Read Concert Ticket Sales Case Study
+                          </button>
+                        </h2>
+                        <div id="collapseOne" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+                          <div class="accordion-body">
+                            <h4>Concert Ticket Sales Project</h4>
+                            <h5>Data Creation</h5>
+                            <p>I built this project to highlight design and advanced Power BI capabilities. The sales data is based on real transactions, with all identifying information replaced by dummy values. The original dataset was generated through a SQL script and loaded into the Power BI Service as a Dataflow. This approach establishes a single source of truth for future reporting and allows others in the organization to work from the same trusted data. </p>
+                            <pre><code class="language-sql">
+-- ** SAMPLE SQL FILE **
+        SELECT
+        Sales.Currency
+        , Sales.PropertyId as StoreID
+        , Sales.PropertyName
+        , Sales.SKU as Sku
+        , CONVERT(DATE,Skus.EventDate) as RecognitionDate
+        , CONVERT(DATE,Sales.OrderDate) as UploadDate       
+        , CONCAT(FORMAT(Skus.Eventdate,'MM'),'-',DATEPART(Year, Skus.Eventdate)) as SalesPeriod
+        , Sales.Location 
+        , Sales.Venue 
+        , Sales.Section
+        , SUM(CASE WHEN Sales.LineItemStatus = 'Assigned' THEN Sales.Quantity ELSE 0 END) AS Quantity
+        , SUM(CASE WHEN Sales.LineItemStatus = 'Assigned' THEN Sales.Quantity * Sales.Price ELSE 0 END) AS Gross
+        , CASE WHEN Sales.PropertyId = 'properties/7' THEN SUM(Sales.HandlingChargeBP - quantity*10 - Sales.HandlingChargeBP*0.04) 
+        ELSE SUM(Sales.HandlingChargeBP) END as BP  --** Account for all-in pricing
+        , CASE WHEN Sales.PropertyId = 'properties/7' THEN SUM(quantity*10) ELSE 
+            SUM(Sales.HandlingChargeSC) END as SC --** Account for all-in pricing
+        , CASE WHEN Sales.PropertyId = 'properties/7' 
+        THEN SUM(Sales.HandlingChargeBP*0.04) ELSE SUM(Sales.HandlingChargeTF) END as TF --** Account for all-in pricing
+        , SUM(Sales.HandlingChargeFF) as FF
+        , SUM(Sales.HandlingChargeCF) as CF
+        , SUM(Sales.HandlingChargeAC) as AC
+        , SUM(Sales.HandlingChargeCL) as CL
+        , SUM(Sales.HandlingChargeVL) as VL
+        , CASE WHEN Sales.Section LIKE '%Guacamole%' or Sales.Section LIKE '%Special Benefit%' THEN 'Charity'
+            WHEN Sales.Section LIKE '%VIP%' or Skus.VIP = 1 THEN 'Tickets - VIP' 
+            ELSE 'Tickets' END as RevenueStream
+        , Skus.Currency as CostCurrency
+        , CASE
+            WHEN Country = 'United States' THEN 'US'
+            WHEN Country = 'Canada' THEN 'CA'
+            WHEN Country = 'United Kingdom' THEN 'UK'
+            WHEN Sales.Currency = 'EUR' THEN 'Europe'
+            ELSE 'Other'
+        END AS Region
+        , CASE
+            WHEN Country = 'United States' THEN LocationRegion
+            WHEN Country = 'Canada' THEN LocationRegion
+            WHEN Country = 'United Kingdom' THEN 'UK'
+            WHEN Sales.Currency = 'EUR' THEN 'Europe'
+            ELSE 'Other'
+        END AS TaxRegion
+
+FROM[TicketSales] Sales
+       inner join[Properties] p
+      on p.Name = Sales.PropertyName
+        inner join[Skus] Skus
+       on Skus.Sku = Sales.SKU
+
+WHERE Sales.OrderStatus = 'Paid'
+    and Sales.Deleted = 0
+    AND (CASE WHEN Sales.LineItemStatus = 'Assigned' THEN Sales.Quantity ELSE 0 END) <> 0
+    AND Skus.EventDate > '2022-12-01'
+    AND p.Tags<> 'Insiders'
+
+
+
+GROUP BY
+        Sales.Currency
+        , Sales.PropertyId
+        , Sales.PropertyName
+        , Sales.SKU
+        , Skus.VIP
+        , Sales.EventDate
+        , Skus.EventDate
+        , Sales.OrderDate
+        , Sales.Location
+        , Sales.Venue
+        , Sales.Section
+        , Sales.Country
+        , Sales.LocationRegion
+        , Skus.Currency
+
+
+    </code></pre><p></p>
+                        <p>Beyond the <strong>fctSales</strong> and <strong>Date</strong> tables, a key component of this report is the <strong>Exchange Rates</strong> table. The sales platform processes transactions in four currencies — USD, CAD, EUR, and GBP — while the business requires both currency specific reporting and a consolidated CAD view. To support this, a JSON call retrieves daily exchange rates from the Bank of Canada for USD, EUR, and GBP. These values are then expanded to provide accurate closing rates aligned with each transaction date.</p>
+{% verbatim %}
+<pre><code class="language-javascript">
+// ** SAMPLE M CODE (POWERQUERY) **
+let
+    Source = Json.Document(Web.Contents("https://www.bankofcanada.ca/valet/observations/FXEURCAD,FXGBPCAD,FXUSDCAD/json?start_date=2019-12-01")),
+    observations = Source[observations],
+    #"Converted to Table" = Table.FromList(observations, Splitter.SplitByNothing(), null, null, ExtraValues.Error),
+    ExpandTable = Table.ExpandRecordColumn(#"Converted to Table", "Column1", {"d", "FXEURCAD", "FXGBPCAD", "FXUSDCAD"}, {"Date", "Column1.FXEURCAD", "Column1.FXGBPCAD", "Column1.FXUSDCAD"}),
+    ExpandFXEURCAD = Table.ExpandRecordColumn(ExpandTable, "Column1.FXEURCAD", {"v"}, {"EUR"}),
+    ExpandFXGBPCAD = Table.ExpandRecordColumn(ExpandFXEURCAD, "Column1.FXGBPCAD", {"v"}, {"GBP"}),
+    ExpandFXUSDCAD = Table.ExpandRecordColumn(ExpandFXGBPCAD, "Column1.FXUSDCAD", {"v"}, {"USD"}),
+    AddCAD = Table.AddColumn(ExpandFXUSDCAD, "CAD", each 1),
+    ChangeDateType = Table.TransformColumnTypes(AddCAD,{{"Date", type date}}),
+    // Unpivot to long format
+    Unpivoted = 
+        Table.UnpivotOtherColumns(ChangeDateType, {"Date"}, "Currency", "Rate"),
+    // 2. Add a single record column containing all date-derived fields
+AddDateRecord = Table.AddColumn(
+    Unpivoted,
+    "DateInfo",
+    each [
+        WeekNumber = Date.WeekOfYear([Date]),
+        YearQuarterNumber = Date.Year([Date]) * 10 + Date.QuarterOfYear([Date]),
+        MonthNumber = Date.Month([Date]),
+        Year = Date.Year([Date]),
+        ClosingMonth = if Date.Month([Date]) = 12 then 1 else Date.Month([Date]) + 1,
+        ClosingYear = if Date.Month([Date]) = 12 then Date.Year([Date]) + 1 else Date.Year([Date]),
+        ClosingDate = Date.AddMonths([Date], 1),
+        ClosingQuarter =
+            (if Date.Month([Date]) = 12 then Date.Year([Date]) + 1 else Date.Year([Date])) * 10
+            + Date.QuarterOfYear(Date.AddMonths([Date], 1)),
+        CurrentQuarter = Date.QuarterOfYear([Date])
+    ],
+    type record
+),
+
+// 3. Expand the record into individual columns
+ExpandDateRecord = Table.ExpandRecordColumn(
+    AddDateRecord,
+    "DateInfo",
+    {"WeekNumber", "YearQuarterNumber", "MonthNumber", "Year", "ClosingMonth", "ClosingYear", "ClosingDate", "ClosingQuarter", "CurrentQuarter"},
+    {"WeekNumber", "YearQuarterNumber", "MonthNumber", "Year", "ClosingMonth", "ClosingYear", "ClosingDate", "ClosingQuarter", "CurrentQuarter"}
+),
+ChangeDataTypes = Table.TransformColumnTypes(ExpandDateRecord,{{"CurrentQuarter", Int64.Type}, {"YearQuarterNumber", Int64.Type}, {"WeekNumber", Int64.Type}, 
+{"MonthNumber", Int64.Type}, {"Year", Int64.Type}, {"ClosingMonth", Int64.Type}, {"ClosingYear", Int64.Type}, {"ClosingQuarter", Int64.Type}, {"ClosingDate", type date}, {"Rate", type number}}),
+
+
+      // Final sort
+    Sorted = Table.Sort(ChangeDataTypes, {{"Date", Order.Ascending}})
+in
+    Sorted
+</code></pre>
+{% endverbatim %}
+                        <h5>Data Modeling, ETL and Design</h5>
+                        <p>To support trend analysis, I created a Time Intelligence Calculation Group that standardizes commonly used metrics such as Month-to-Date, Previous Month-to-Date, Year-to-Date, Previous Year-to-Date, and Year-over-Year Growth. With multiple currencies in play, it was also important to ensure users always understand what they’re viewing. Dynamic formatting handles this by applying the correct currency symbol based on user selections. Once the dashboard layout was finalized, I exported a screenshot into PowerPoint to create a clean SVG background. This technique removes the need for extra shapes and containers inside Power BI, reducing load times and keeping the report lightweight.</p>
+
+              
+
+                          </div>
+                        </div>
+                      </div>
+                  </div>
+                    
+                            <br /><br /><strong><em>Click image to launch interactive dashboard.</em></strong></p>
+                            <a href="https://app.powerbi.com/view?r=eyJrIjoiYTNlYTYyM2MtMmYzZC00ZDlmLWFjYjYtM2VmOWFmODZhMDdlIiwidCI6IjFlNzUwYTA2LWM5MzgtNDdiNC1hZjBlLWRjNTg4ZmMxMjU5OCJ9" target="_blank">
+                            <img class = "img-fluid" src="{% static 'assets/img/concertTix_PBI.png' %}"/></a>
+                        </div>
+                     </div>
+                               
+
+<!-- Premier League Standings -->      
+ <hr>               
+                 
+                      <div class="d-flex flex-column flex-md-row justify-content-between mb-5">
+                        <div class="flex-grow-1">
+                            <h3 class="mb-0">Premier League Standings</h3>
+                            <div class="subheading mb-3">PowerBI | UX Design | Season-Aware Intelligence </div>
+                            <p>
+                            I love Premier League football (COYS!), and decided to create this dashboard. The data comes from Football-Data.co.uk, and includes 10 years of Premier League action. All fixtures and all goals scored. The project focused on solving real-world modelling challenges, including non-standard date structures, ranking logic, and interactive reporting. 
+                <!-- Accordion 2 -->
+                    <div class="accordion" id="accordionExample">
+                      <div class="accordion-item">
+                        <h2 class="accordion-header">
+                          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="true" aria-controls="collapseTwo">
+                            Read Premier League Standings Case Study
+                          </button>
+                        </h2>
+                        <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+                          <div class="accordion-body">
+                            <h4>Project: Premier League Analytics Dashboard</h4>
+                            <h5><em>A Case Study in Data Storytelling, UX Design, and Season Aware Intelligence</em></h5>
+                            <h5>Project Overview</h5>
+                            <p>I decided to combine two of my passions – data storytelling and my love of football by developing an interactive Power BI dashboard to analyze English Premier League performance across multiple seasons. The project focused on solving real-world modelling challenges, including non-standard date structures, ranking logic, and interactive reporting.</p>
+                            <p>The goal was to build a professional grade reporting experience that feels as polished as a commercial sports analytics product — not just a collection of visuals. All data for this project was sourced from Football-Data.co.uk. </p>
+                            <p>An early challenge to this project was that football seasons don’t follow a traditional calendar structure – they span two calendar years (eg. 2019-2020). This creates complications when applying standard time intelligence functions. </p>
+                            <p>The project demonstrates my ability to:
+                                <ul>
+                                    <li>Model complex sports data using a clean star schema</li>
+                                    <li>Engineer season aware time intelligence</li>
+                                    <li>Create dynamic, user friendly visuals</li>
+                                    <li>Integrate branding elements like team logos and contextual tooltips</li>
+                                    <li>Build scalable, maintainable Power BI solutions</li>
+                                </ul>
+                            It also serves as a flagship example of how I combine analytics, design, and product thinking — the same blend I bring to music, ticketing, and event focused analytics roles.</p>
+
+                            <h5>Data Architecture & Modeling</h5>
+                            <p><strong>Star Schema Foundation</strong></p>
+                            <p>I designed the model around a disciplined star schema to ensure clarity, performance, and scalability. Key components include:
+                                <ul>
+                                    <li>Fact tables for match results and season performance</li>
+                                    <li>Dimension tables for teams, dates, seasons, and competitions</li>
+                                    <li>Clean relationship paths to avoid ambiguity</li>
+                                    <li>Slim, efficient fact tables that support fast DAX calculations</li>
+                                </ul>
+                            </p>
+                            <p><strong>Season Aware Time Intelligence</strong></p>
+                            <p>Football seasons span two calendar years, which breaks traditional time intelligence. To solve this, I built a custom framework that:
+                                <ul>
+                                    <li>Defines seasons independently of calendar years</li>
+                                    <li>Supports filtering by season, match-week, or date</li>
+                                    <li>Uses calculation items to simplify repeated logic</li>
+                                    <li>Ensures measures behave correctly regardless of slicer combinations</li>
+                                </ul>
+                            </p>
+                            <p>This enables accurate metrics such as:
+                                <ul>
+                                    <li>Season to date performance</li>
+                                    <li>Rolling form over the last N matches</li>
+                                    <li>Dynamic league table rankings</li>
+                                    <li>Cross season comparisons</li>
+                                </ul>
+                            </p>
+                            <p>This framework is one of the most technically sophisticated parts of the project and a reusable asset for future sports analytics work.
+                            </p>
+                            <p><strong>Key Measures</strong></p>
+                            <p>Some of the core metrics include:
+                                <ul>
+                                    <li>Wins, draws, losses</li>
+                                    <li>Points and points per match</li>
+                                    <li>Goals for/against and goal difference</li>
+                                    <li>Form over recent matches</li>
+                                    <li>Season aggregates and rolling metrics</li>
+                                </ul>
+                            </p>
+                            <p>League standings were calculated using a custom RANKX measure that incorporates multiple tie-breakers – Points, Goal Difference, and Wins. By combining these into a weighted scoring model, I ensure rankings remained deterministic – even when teams were tied on primary metrics.
+                            </p>
+                            <h5>UI/UX & Visual Design</h5>
+                            <p><strong>Branding & Visual Identity</strong></p>
+                            <p>A major focus was creating a dashboard that feels modern and premium. I incorporated:
+                                <ul>
+                                    <li>GIT hosted, scalable team logos</li>
+                                    <li>Consistent sizing and alignment</li>
+                                    <li>A clean, Premier League inspired aesthetic</li>
+                                    <li>Background visual elements designed in PowerPoint as SVG</li>
+                                    <li>Custom SVG images for chart icons</li>
+                                </ul>
+                            </p>
+                            <p><strong>Layout & Interaction</strong></p>
+                            <p>To improve usability, I simulated a “pop-out” view using bookmarks and layered visuals. This allows users to drill into detailed tables without navigating away from the main report. </p>
+                            <p>The dashboard emphasizes:
+                                <ul>
+                                    <li>Clear hierarchy and whitespace</li>
+                                    <li>Intuitive slicers and filters</li>
+                                    <li>Smooth navigation</li>
+                                    <li>A balance between detail and simplicity</li>
+                                </ul>
+                            </p>
+                            <p>The result is a reporting experience that feels polished and professional.</p>
+                            <p><strong>Key Outcomes</strong></p>
+                            <p>This project demonstrates:
+                                <ul>
+                                    <li>Strong analytics engineering fundamentals</li>
+                                    <li>Advanced DAX and time intelligence capabilities</li>
+                                    <li>A refined sense of UI/UX and branding</li>
+                                    <li>The ability to build dashboards that feel like products, not prototypes</li>
+                                    <li>A repeatable framework for future sports or event analytics projects</li>
+                                </ul>
+                                <p>It also reflects my broader philosophy: <strong>analytics should be both insightful and delightful.</strong></p>
+
+                          </div>
+                        </div>
+                      </div>
+                  </div>
+
+                            <br /><br /><strong><em>Click image to launch interactive dashboard.</em></strong></p>
+                            <a href="https://app.powerbi.com/view?r=eyJrIjoiNjc1YmFmN2ItMWU4OS00MTM2LTkzOTUtMGUyN2EyNmQ2OTA4IiwidCI6IjFlNzUwYTA2LWM5MzgtNDdiNC1hZjBlLWRjNTg4ZmMxMjU5OCJ9" target="_blank">
+                            <img class = "img-fluid" src="{% static 'assets/img/premierleague.png' %}"/></a>
+
+                        </div>
+                      </div>
+                    
+<!-- Brewery Sales -->
+  <hr>
+                        <div class="d-flex flex-column flex-md-row justify-content-between mb-5">
+                        <div class="flex-grow-1">
+                            <h3 class="mb-0">Bent Canoe Fermentation Sales</h3>
+                            <div class="subheading mb-3">PowerBI | UX Design | Python | Prompt Engineering </div>
+                            <p>
+                            A simple interactive Power BI dashboard showing web sales for a fictional brewery. Bold, contrasting colours that tie in company branding. Important KPIs are easily identifiable. 
+                <!-- Accordion 3 -->
+
+                <div class="accordion" id="accordionExample">
+                      <div class="accordion-item">
+                        <h2 class="accordion-header">
+                          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="true" aria-controls="collapseThree">
+                            Read Bent Canoe Fermentations Case Study
+                          </button>
+                        </h2>
+                        <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+                          <div class="accordion-body">
+                            <h5>Data Creation</h5>
+                            <p>I built this project to showcase design, Power BI, prompt engineering, and Python skills by simulating sales for a fictional brewery’s online store. I created a full product catalog with categories, variants, and pricing — over 200 SKUs inspired by real brewery offerings.</p>
+                            <p>To generate realistic sales activity for Q3 2025, I used AI prompting to produce randomized transactions. A Python script handled the heavy lifting: it weighted popular items like Beer and Ready-To-Drink products more heavily and boosted weekend sales to mimic real buying patterns. The script outputs a parquet file, which stores large datasets efficiently and loads quickly into Power BI.</p>
+                            <p></p>
+
+
+{% verbatim %}
+                    <pre><code class="language-python">
+
+import pandas as pd
+import numpy as np
+from datetime import datetime, timedelta
+import random
+
+# -----------------------------
+# Load SKU catalog
+# -----------------------------
+sku_df = pd.read_csv(
+    r"C:\Users..BreweryProducts.csv", encoding="latin1"
+)
+
+
+# Normalize column names
+sku_df.columns = sku_df.columns.str.lower().str.replace(" ", "_")
+
+# -----------------------------
+# Helper functions
+# -----------------------------
+
+def base_daily_demand(category):
+    """Return a baseline expected number of transactions per day by category."""
+    if category == "Beer":
+        return np.random.randint(20, 40)
+    if category == "Ready To Drink":
+        return np.random.randint(15, 30)
+    if category == "Spirit":
+        return np.random.randint(2, 6)
+    if category == "Energy":
+        return np.random.randint(10, 20)
+    if category == "Hydration":
+        return np.random.randint(8, 15)
+    if category == "Wellness":
+        return np.random.randint(5, 10)
+    if category == "Non-Alcoholic":
+        return np.random.randint(6, 12)
+    return 5
+
+def weekend_multiplier(date):
+    """Increase demand on weekends."""
+    if date.weekday() in [4, 5]:  # Friday, Saturday
+        return 1.8
+    if date.weekday() == 6:       # Sunday
+        return 1.4
+    return 1.0
+
+def quantity_for_variant(variant):
+    """Assign realistic quantities per transaction."""
+    if "1 Can" in variant or "1 Bottle" in variant:
+        return np.random.randint(1, 4)
+    if "4-Pack" in variant or "4-Can" in variant:
+        return np.random.randint(1, 2)
+    if "6-Pack" in variant:
+        return np.random.randint(1, 2)
+    if "12-Pack" in variant:
+        return 1
+    if "24-Case" in variant:
+        return 1
+    return 1
+
+# -----------------------------
+# Generate Q3 2025 date range
+# -----------------------------
+start = datetime(2025, 7, 1)
+end = datetime(2025, 9, 30)
+dates = pd.date_range(start, end)
+
+# -----------------------------
+# Generate transactions
+# -----------------------------
+transactions = []
+
+transaction_counter = 1
+
+for date in dates:
+    for _, row in sku_df.iterrows():
+
+        # Determine expected demand
+        base = base_daily_demand(row["category"])
+        multiplier = weekend_multiplier(date)
+        expected = int(base * multiplier)
+
+        # Random chance that SKU has zero sales today
+        if random.random() < 0.65:
+            continue
+
+        # Number of transactions for this SKU today
+        num_tx = np.random.poisson(expected / 20)
+
+        for _ in range(num_tx):
+            qty = quantity_for_variant(row["variant_size"])
+            price = row["price"]
+            total = round(price * qty, 2)
+
+            transactions.append({
+                "transaction_id": f"T{transaction_counter:06d}",
+                "transaction_date": date.strftime("%Y-%m-%d"),
+                "sku": row["sku"],
+                "product_name": row["name"],
+                "category": row["category"],
+                "variant_size": row["variant_size"],
+                "unit_price": price,
+                "quantity": qty,
+                "total_amount": total
+            })
+
+            transaction_counter += 1
+
+# Convert to DataFrame
+transactions_df = pd.DataFrame(transactions)
+
+# -----------------------------
+# Save or inspect
+# -----------------------------
+print(transactions_df.head())
+print(f"Generated {len(transactions_df):,} transactions.")
+transactions_df.to_parquet("transactions_q3_2025.parquet", index=False)
+</code></pre>
+{% endverbatim %}
+                            <H5>Data Modeling , ETL and Design</H5>
+                            <p>The parquet file was imported into Power BI as the fctSales table, where I performed the necessary transformations. Supporting tables — including a Date table and dimProducts — were created and related appropriately. From there, I built the measures needed to drive the visuals. Once the dashboard layout was complete, I exported a screenshot into PowerPoint to create a clean SVG background. This approach removes the need for extra shapes and containers inside Power BI, improving load times and keeping the report lightweight. The final design uses consistent brand colours to give the report a polished, cohesive look.</p>
+
+
+                          </div>
+                        </div>
+                      </div>
+                  </div>
+
+                            <br /><br /><strong><em>Click image to launch interactive dashboard.</em></strong></p>
+                            <a href="https://app.powerbi.com/view?r=eyJrIjoiNmUwOTVlMzItYjFjZi00NmI0LWJkY2MtMzFiMmUxMzMwZjc4IiwidCI6IjFlNzUwYTA2LWM5MzgtNDdiNC1hZjBlLWRjNTg4ZmMxMjU5OCJ9" target="_blank">
+                            <img class = "img-fluid" src="{% static 'assets/img/bentcanoe.png' %}"/></a>
+
+                        </div>
+                      </div>      
+
+
+<!-- Excel Workbook -->
+  <hr>
+                        <div class="d-flex flex-column flex-md-row justify-content-between mb-5">
+                        <div class="flex-grow-1">
+                            <h3 class="mb-0">Excel / PowerQuery Dashboards</h3>
+                            <div class="subheading mb-3">PowerQuery | Python For Excel </div>
+                            <p>
+                            There are times when the business does not require a PowerBI dashboard, but rather an Excel workbook for reference. The sample shown below utilizes PowerQuery (M) ETL and sophisticated Excel formulae to render a fully interactive dashboard for key stakeholders. KPIs are highlighted, slicers allow the user to drill down into specific sales, with all sales details presented in an easy to use table. <br />
+                            <img class="img-fluid" src="{% static 'assets/img/ticketSales_Excel.png' %}">
+
+                        </div>
+                      </div> 
+
+<!-- Paginated Reports -->
+  <hr>
+                        <div class="d-flex flex-column flex-md-row justify-content-between mb-5">
+                        <div class="flex-grow-1">
+                            <h3 class="mb-0">Paginated Reports</h3>
+                            <div class="subheading mb-3">PowerBI | Excel </div>
+                            <p>
+                            Pixel perfect Paginated Reports created in Power BI make it easy for stakeholders to get the sales details they need, delivered straight to their inbox on a reliable schedule, as PDFs or Excel spreadsheets. <br />
+                            <img class="img-fluid" src="{% static 'assets/img/paginatedReport.png' %}">
+
+                        </div>
+                      </div> 
+                         
+
+   {% endblock %}

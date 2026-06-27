@@ -1,1 +1,34 @@
-<h1>About Me!!</h1>
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<section class="resume-section" id="portfolio">
+                <div class="resume-section-content">
+                    <h2 class="mb-5">Portfolio</h2>
+                    <div class="d-flex flex-column flex-md-row justify-content-between mb-5">
+                        <div class="flex-grow-1">
+                            <h3 class="mb-0">Concert Ticket Sales for 2025 </h3>
+                            <div class="subheading mb-3">PowerBI | JSON | Calculation Groups | Dynamic Currency Formatting</div>
+                            <p>A complex interactive Power BI dashboard showing fictional 2025 concert ticket sales, converted into $CAD using live Bank of Canada exchange rates. It features dynamic currency formatting, custom growth metrics, and Calculation Groups for streamlined Time Intelligence.
+                            <br /><br /><strong><em>Click image to launch interactive dashboard.</em></strong></p>
+                            <a href="https://app.powerbi.com/view?r=eyJrIjoiYTNlYTYyM2MtMmYzZC00ZDlmLWFjYjYtM2VmOWFmODZhMDdlIiwidCI6IjFlNzUwYTA2LWM5MzgtNDdiNC1hZjBlLWRjNTg4ZmMxMjU5OCJ9" target="_blank">
+                            <img class = "img-fluid" src="{% static 'assets/img/concertTix_PBI.png' %}"/></a>
+                        </div>
+                     </div>
+                     <hr>
+                      <div class="d-flex flex-column flex-md-row justify-content-between mb-5">
+                        <div class="flex-grow-1">
+                            <h3 class="mb-0">Premier League Standings</h3>
+                            <div class="subheading mb-3">PowerBI | UX Design | Season-Aware Intelligence </div>
+                            <p>
+                            I love Premier League football (COYS!), and decided to create this dashboard. The data comes from Football-Data.co.uk, and includes 10 years of Premier League action. All fixtures and all goals scored. The project focused on solving real-world modelling challenges, including non-standard date structures, ranking logic, and interactive reporting. 
+                            <br /><br /><strong><em>Click image to launch interactive dashboard.</em></strong></p>
+                            <a href="https://app.powerbi.com/view?r=eyJrIjoiNjc1YmFmN2ItMWU4OS00MTM2LTkzOTUtMGUyN2EyNmQ2OTA4IiwidCI6IjFlNzUwYTA2LWM5MzgtNDdiNC1hZjBlLWRjNTg4ZmMxMjU5OCJ9" target="_blank">
+                            <img class = "img-fluid" src="{% static 'assets/img/premierleague.png' %}"/></a>
+
+                        </p>
+                        </div>
+                      </div>
+
+   {% endblock %}
