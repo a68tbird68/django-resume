@@ -37,7 +37,10 @@
                     <!--<li class="nav-item"><a class="nav-link js-scroll-trigger" href="../#skills">Skills</a></li> -->
                     <li class="nav-item"><a class="nav-link js-scroll-trigger" href="../#interests">Interests</a></li>
                     <li class="nav-item"><a class="nav-link js-scroll-trigger" href="../#certifications">Certifications</a></li>
-                    <li class="nav-item"><a class="nav-link js-scroll-trigger" href="{% url 'portfolio' %}">Portfolio</a></li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'portfolio' %}active{% endif %}" 
+                        href="{% url 'portfolio' %}">Portfolio</a>
+                    </li>
                 </ul>
             </div>
         </nav>
