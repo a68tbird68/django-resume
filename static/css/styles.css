@@ -10992,3 +10992,12 @@ section.resume-section .resume-section-content {
     padding-bottom: 5rem;
   }
 }
+
+#end-of-home {
+    height: 500px;   /* or whatever height you want */
+}
+
+.fade-out {
+    opacity: 0;
+    transition: opacity 0.6s ease;
+}

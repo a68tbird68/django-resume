@@ -100,23 +100,7 @@
                     </div>
                 </div>
             </section>
-            <hr class="m-0" />
-            <!-- Skills-->
-           <!--  <section class="resume-section" id="skills">
-                <div class="resume-section-content">
-                    <h2 class="mb-5">Skills</h2>
-                    <div class="subheading mb-3">Programming Languages & Tools</div>
-                    <ul class="list-inline dev-icons">
-                        <li class="list-inline-item"><i class="fab fa-wordpress" title="Wordpress"></i></li>
-                        <li class="list-inline-item"><i class="fab fa-python" title="Python"></i></li>
-                        <li class="list-inline-item"><i class="fa-solid fa-file-excel" title="PowerQuery"></i></li>
-                        <li class="list-inline-item"><i class="fa-solid fa-database" title="SQL"></i></li>
-                        <li class="list-inline-item"><i class="fa-solid fa-chart-simple" title="PowerBI"></i></li>
-                        
-                    </ul>
-                   
-                </div>
-            </section> -->
+            
             <hr class="m-0" />
             <!-- Interests-->
             <section class="resume-section" id="interests">
@@ -170,8 +154,42 @@
                     </ul>
                 </div>
             </div>
-            
+
                 </div>
             </section>
+            <div id="end-of-home"></div>
         </div>
+
+
    {% endblock %}
+
+   {% block extra_js %}
+<script>
+console.log("extra_js block is rendering");
+</script>
+
+ <script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const target = document.getElementById("end-of-home");
+    console.log("Target:", target);
+
+    const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                console.log("Intersecting — redirecting");
+                document.body.classList.add("fade-out");
+                setTimeout(() => {
+        window.location.href = "{% url 'portfolio' %}";
+    }, 500); // match the CSS transition
+}
+        });
+    }, {
+        root: null,        // viewport
+        threshold: 0.1     // trigger when 10% visible
+    });
+
+    observer.observe(target);
+});
+</script>
+{% endblock extra_js %}
